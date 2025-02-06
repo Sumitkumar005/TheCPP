@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Unique Competitive Programming Club</title>
+  <!-- Chart.js for charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Particles.js library -->
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+
+  <!-- Matter.js for physics-based animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  
+  
+  <style>
+    /* =======================================================================
+       RESET & BASE STYLES
+       ======================================================================= */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a1a;
+      color: #eee;
+      overflow-x: hidden;
+      position: relative;
+    }
+    /* =======================================================================
+       MATTER.JS BACKGROUND CANVAS
+       ======================================================================= */
+    #matterCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: radial-gradient(circle, #2b2b2b, #1a1a1a);
+    }
+    /* =======================================================================
+       SPLASH SCREEN STYLES
+       ======================================================================= */
+    #splashScreen {
+      position: fixed;
+      z-index: 1000;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      animation: fadeOut 1s ease forwards;
+      animation-delay: 3s;
+    }
+    #splashScreen.hidden {
+      display: none;
+    }
+    #splashScreen img {
+      width: 200px;
+      height: 200px;
+      object-fit: contain;
+      animation: logoPop 1s ease;
+    }
+    #splashScreen h1 {
+      margin-top: 20px;
+      font-size: 3em;
+      letter-spacing: 2px;
+      animation: textFadeIn 1.2s ease;
+    }
+    @keyframes logoPop {
+      0% { transform: scale(0); opacity: 0; }
+      60% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+    @keyframes textFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+    /* =======================================================================
+       NAVIGATION BAR STYLES
+       ======================================================================= */
+    nav {
+      background: #282828;
+      padding: 15px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      animation: fadeIn 1s ease-out;
+      display: none;
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+    }
+    nav ul li {
+      margin: 0 20px;
+      position: relative;
+    }
+    nav ul li a {
+      color: #eee;
+      text-decoration: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.3s;
+      padding: 5px 0;
+    }
+    nav ul li a:hover {
+      color: #f39c12;
+    }
+    nav ul li a::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -2px;
+      width: 0%;
+      height: 2px;
+      background: #f39c12;
+      transition: width 0.3s;
+    }
+    nav ul li a:hover::after {
+      width: 100%;
+    }
+    /* =======================================================================
+       SECTION & CONTENT STYLES
+       ======================================================================= */
+    .section {
+      display: none;
+      background: #222;
+      color: #ddd;
+      margin: 30px auto;
+      padding: 20px 30px;
+      max-width: 1200px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      animation: fadeIn 1s ease-out;
+    }
+    .section.active {
+      display: block;
+    }
+    h2 {
+      margin-bottom: 15px;
+      color: #f39c12;
+      text-align: center;
+      font-size: 2.5em;
+      animation: fadeIn 1.2s ease-out;
+    }
+    /* =======================================================================
+       LEADERBOARD TABLE STYLES
+       ======================================================================= */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      animation: fadeIn 1.5s ease-out;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #444;
+      transition: background 0.3s;
+    }
+    th {
+      background: #f39c12;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    tr:hover {
+      background: #333;
+      cursor: pointer;
+    }
+    /* Change the leaderboard background (not white) */
+    #leaderboard {
+      background: #2d2d2d;
+    }
+    /* =======================================================================
+       INPUT & BUTTON STYLES
+       ======================================================================= */
+    input[type="text"] {
+      padding: 10px;
+      margin-right: 8px;
+      width: 250px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background: #333;
+      color: #eee;
+      transition: border 0.3s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #f39c12;
+    }
+    button {
+      padding: 10px 16px;
+      background: #282828;
+      color: #eee;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    button:hover {
+      background: #3e3e3e;
+      transform: scale(1.03);
+    }
+    /* =======================================================================
+       CHART MODAL STYLES
+       ======================================================================= */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1001;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background: rgba(0,0,0,0.8);
+      animation: fadeIn 0.5s ease-out;
+    }
+    .modal-content {
+      background: #222;
+      color: #eee;
+      margin: 10% auto;
+      padding: 20px 30px;
+      max-width: 700px;
+      border-radius: 8px;
+      position: relative;
+      animation: fadeIn 0.7s ease-out;
+    }
+    .close-btn {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background: #f39c12;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .close-btn:hover {
+      background: #d35400;
+    }
+    /* =======================================================================
+       LIST & LINK STYLES
+       ======================================================================= */
+    ul {
+      list-style-type: none;
+      padding-left: 20px;
+      animation: fadeIn 1s ease-out;
+    }
+    a {
+      color: #f39c12;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .result {
+      margin-top: 15px;
+      animation: fadeIn 1s ease-out;
+    }
+    /* =======================================================================
+       FADE IN ANIMATION
+       ======================================================================= */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Matter.js canvas for animated background -->
+  <canvas id="matterCanvas"></canvas>
+  
+
+  <!-- SPLASH SCREEN -->
+  <div id="splashScreen">
+    <!-- Replace with your club logo URL -->
+    <img src="./IMG_20231213_14500429.jpg" alt="Club Logo">
+    
+    <h1>Competitive Programming Club</h1>
+  </div>
+
+  <!-- NAVIGATION BAR -->
+  <nav id="mainNav">
+    <ul>
+      <li><a onclick="showSection('leaderboard')">Leaderboard</a></li>
+      <li><a onclick="showSection('daily')">Daily Problems</a></li>
+      <li><a onclick="showSection('progress')">My Progress</a></li>
+      <li><a onclick="showSection('compare')">Compare</a></li>
+      <li><a onclick="showSection('blog')">Blog</a></li>
+      <li><a onclick="showSection('club')">Club Info</a></li>
+    </ul>
+  </nav>
+
+  <!-- LEADERBOARD SECTION -->
+  <div id="leaderboard" class="section active">
+    <h2>Leaderboard</h2>
+    <table id="leaderboardTable">
+      <thead>
+        <tr>
+          <th>Sr. No.</th>
+          <th>Student ID</th>
+          <th>Codeforces Rating</th>
+          <th>LeetCode Rating</th>
+          <th>CodeChef Rating</th>
+          <th>Highest Rating</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Leaderboard rows will be injected by JavaScript -->
+      </tbody>
+    </table>
+    <p style="text-align: center;">Click on any row to view detailed rating trends.</p>
+  </div>
+
+  <!-- DAILY PROBLEMS SECTION -->
+  <div id="daily" class="section">
+    <h2>Daily Problems</h2>
+    <ul id="problemsList">
+      <!-- Daily problems will be inserted by JavaScript -->
+    </ul>
+  </div>
+
+  <!-- MY PROGRESS SECTION -->
+  <div id="progress" class="section">
+    <h2>My Progress</h2>
+    <p style="text-align: center;">Enter your Student ID to view progress:</p>
+    <div style="text-align: center; margin-bottom: 20px;">
+      <input type="text" id="progressId" placeholder="e.g., student1">
+      <button onclick="showProgress()">Fetch Progress</button>
+    </div>
+    <div id="progressResult" class="result"></div>
+  </div>
+
+  <!-- COMPARE STUDENTS SECTION -->
+  <div id="compare" class="section">
+    <h2>Compare Students</h2>
+    <p style="text-align: center;">Enter Student IDs (comma separated) to compare:</p>
+    <div style="text-align: center; margin-bottom: 20px;">
+      <input type="text" id="compareIds" placeholder="e.g., student1, student2">
+      <button onclick="compareStudents()">Compare</button>
+    </div>
+    <div id="compareResult" class="result"></div>
+  </div>
+
+  <!-- BLOG SECTION -->
+  <div id="blog" class="section">
+    <h2>Blog</h2>
+    <p>Welcome to our blog! Here you'll find updates, insights, and tutorials on competitive programming. Stay tuned for the latest posts!</p>
+    <article>
+      <h3>Post Title 1</h3>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam.</p>
+      <a href="#">Read more...</a>
+    </article>
+    <article>
+      <h3>Post Title 2</h3>
+      <p>Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris.</p>
+      <a href="#">Read more...</a>
+    </article>
+  </div>
+
+  <!-- CLUB INFO SECTION -->
+  <div id="club" class="section">
+    <h2>Club Information & Resources</h2>
+    <h3>About the Club:</h3>
+    <p>Welcome to the Competitive Programming Club. Our mission is to improve programming skills through practice and competitions.</p>
+    <h3>Resources:</h3>
+    <ul>
+      <li>Presentations: <a href="https://drive.google.com/your-ppt-link" target="_blank">Google Drive PPT</a></li>
+      <li>Study Materials: <a href="https://drive.google.com/your-materials-link" target="_blank">Google Drive Materials</a></li>
+    </ul>
+    <h3>Mentorship Sessions:</h3>
+    <p>Check our schedule for upcoming sessions and special tutorials.</p>
+  </div>
+
+  <!-- CHART MODAL -->
+  <div id="chartModal" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+      <h3 id="modalTitle">Student Rating Trends</h3>
+      <canvas id="ratingChart" width="400" height="300"></canvas>
+    </div>
+  </div>
+
+  <script>
+    /***********************************************************************
+     * Dummy Data: 20 Members
+     ***********************************************************************/
+    const students = [
+      { id: "student1", codeforces: 1500, leetcode: 1400, codechef: 1450, history: { Codeforces: [1400, 1420, 1450, 1470, 1500], LeetCode: [1300, 1320, 1350, 1370, 1400], CodeChef: [1350, 1370, 1400, 1420, 1450] } },
+      { id: "student2", codeforces: 1600, leetcode: 1500, codechef: 1550, history: { Codeforces: [1550, 1560, 1580, 1590, 1600], LeetCode: [1450, 1460, 1480, 1490, 1500], CodeChef: [1500, 1510, 1530, 1540, 1550] } },
+      { id: "student3", codeforces: 1550, leetcode: 1450, codechef: 1500, history: { Codeforces: [1500, 1510, 1530, 1540, 1550], LeetCode: [1400, 1410, 1430, 1440, 1450], CodeChef: [1450, 1460, 1480, 1490, 1500] } },
+      { id: "student4", codeforces: 1700, leetcode: 1600, codechef: 1650, history: { Codeforces: [1650, 1660, 1680, 1690, 1700], LeetCode: [1550, 1560, 1580, 1590, 1600], CodeChef: [1600, 1610, 1630, 1640, 1650] } },
+      { id: "student5", codeforces: 1480, leetcode: 1380, codechef: 1420, history: { Codeforces: [1420, 1430, 1450, 1460, 1480], LeetCode: [1320, 1330, 1350, 1360, 1380], CodeChef: [1370, 1380, 1400, 1410, 1420] } },
+      { id: "student6", codeforces: 1620, leetcode: 1520, codechef: 1570, history: { Codeforces: [1570, 1580, 1590, 1600, 1620], LeetCode: [1470, 1480, 1490, 1500, 1520], CodeChef: [1520, 1530, 1540, 1550, 1570] } },
+      { id: "student7", codeforces: 1510, leetcode: 1410, codechef: 1460, history: { Codeforces: [1460, 1470, 1480, 1500, 1510], LeetCode: [1360, 1370, 1380, 1390, 1410], CodeChef: [1410, 1420, 1440, 1450, 1460] } },
+      { id: "student8", codeforces: 1650, leetcode: 1550, codechef: 1600, history: { Codeforces: [1600, 1610, 1620, 1630, 1650], LeetCode: [1550, 1560, 1570, 1580, 1550], CodeChef: [1580, 1590, 1600, 1610, 1600] } },
+      { id: "student9", codeforces: 1580, leetcode: 1480, codechef: 1530, history: { Codeforces: [1530, 1540, 1550, 1570, 1580], LeetCode: [1430, 1440, 1450, 1460, 1480], CodeChef: [1480, 1490, 1500, 1510, 1530] } },
+      { id: "student10", codeforces: 1720, leetcode: 1620, codechef: 1670, history: { Codeforces: [1670, 1680, 1690, 1700, 1720], LeetCode: [1570, 1580, 1590, 1600, 1620], CodeChef: [1620, 1630, 1640, 1650, 1670] } },
+      { id: "student11", codeforces: 1490, leetcode: 1390, codechef: 1440, history: { Codeforces: [1440, 1450, 1460, 1470, 1490], LeetCode: [1340, 1350, 1360, 1370, 1390], CodeChef: [1390, 1400, 1410, 1420, 1440] } },
+      { id: "student12", codeforces: 1630, leetcode: 1530, codechef: 1580, history: { Codeforces: [1580, 1590, 1600, 1610, 1630], LeetCode: [1480, 1490, 1500, 1510, 1530], CodeChef: [1530, 1540, 1550, 1560, 1580] } },
+      { id: "student13", codeforces: 1570, leetcode: 1470, codechef: 1520, history: { Codeforces: [1520, 1530, 1540, 1550, 1570], LeetCode: [1420, 1430, 1440, 1450, 1470], CodeChef: [1470, 1480, 1490, 1500, 1520] } },
+      { id: "student14", codeforces: 1680, leetcode: 1580, codechef: 1630, history: { Codeforces: [1630, 1640, 1650, 1660, 1680], LeetCode: [1530, 1540, 1550, 1560, 1580], CodeChef: [1580, 1590, 1600, 1610, 1630] } },
+      { id: "student15", codeforces: 1500, leetcode: 1400, codechef: 1450, history: { Codeforces: [1450, 1460, 1470, 1490, 1500], LeetCode: [1350, 1360, 1370, 1380, 1400], CodeChef: [1400, 1410, 1420, 1430, 1450] } },
+      { id: "student16", codeforces: 1640, leetcode: 1540, codechef: 1590, history: { Codeforces: [1590, 1600, 1610, 1620, 1640], LeetCode: [1490, 1500, 1510, 1520, 1540], CodeChef: [1540, 1550, 1560, 1570, 1590] } },
+      { id: "student17", codeforces: 1560, leetcode: 1460, codechef: 1510, history: { Codeforces: [1510, 1520, 1530, 1540, 1560], LeetCode: [1410, 1420, 1430, 1440, 1460], CodeChef: [1460, 1470, 1480, 1490, 1510] } },
+      { id: "student18", codeforces: 1690, leetcode: 1590, codechef: 1640, history: { Codeforces: [1640, 1650, 1660, 1670, 1690], LeetCode: [1590, 1600, 1610, 1620, 1590], CodeChef: [1630, 1640, 1650, 1660, 1640] } },
+      { id: "student19", codeforces: 1510, leetcode: 1410, codechef: 1460, history: { Codeforces: [1460, 1470, 1480, 1490, 1510], LeetCode: [1360, 1370, 1380, 1390, 1410], CodeChef: [1410, 1420, 1430, 1440, 1460] } },
+      { id: "student20", codeforces: 1710, leetcode: 1610, codechef: 1660, history: { Codeforces: [1660, 1670, 1680, 1690, 1710], LeetCode: [1610, 1620, 1630, 1640, 1610], CodeChef: [1650, 1660, 1670, 1680, 1660] } }
+    ];
+    
+    // Compute each student's highest rating
+    students.forEach(s => {
+      s.highest = Math.max(s.codeforces, s.leetcode, s.codechef);
+    });
+    
+    const dailyProblems = [
+      { platform: "Codeforces", problem_id: "123A", title: "A+B Problem" },
+      { platform: "LeetCode", problem_id: "Two Sum", title: "Two Sum" },
+      { platform: "CodeChef", problem_id: "START01", title: "Starter Problem" }
+    ];
+    
+    const progressData = {
+      "student1": { problems_solved: { Codeforces: 120, LeetCode: 100, CodeChef: 80 }, ratings_over_time: { Codeforces: [1400,1420,1450,1470,1500], LeetCode: [1300,1320,1350,1370,1400], CodeChef: [1350,1370,1400,1420,1450] } },
+      "student2": { problems_solved: { Codeforces: 150, LeetCode: 140, CodeChef: 130 }, ratings_over_time: { Codeforces: [1550,1560,1580,1590,1600], LeetCode: [1450,1460,1480,1490,1500], CodeChef: [1500,1510,1530,1540,1550] } },
+      "student3": { problems_solved: { Codeforces: 130, LeetCode: 120, CodeChef: 110 }, ratings_over_time: { Codeforces: [1500,1510,1530,1540,1550], LeetCode: [1400,1410,1430,1440,1450], CodeChef: [1450,1460,1480,1490,1500] } },
+      "student4": { problems_solved: { Codeforces: 180, LeetCode: 170, CodeChef: 160 }, ratings_over_time: { Codeforces: [1650,1660,1680,1690,1700], LeetCode: [1550,1560,1580,1590,1600], CodeChef: [1600,1610,1630,1640,1650] } }
+    };
+    
+    /***********************************************************************
+     * Render Leaderboard
+     ***********************************************************************/
+    function renderLeaderboard() {
+      const sortedStudents = students.sort((a, b) => b.highest - a.highest);
+      const tbody = document.querySelector("#leaderboardTable tbody");
+      tbody.innerHTML = "";
+      sortedStudents.forEach((student, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${student.id}</td>
+          <td>${student.codeforces}</td>
+          <td>${student.leetcode}</td>
+          <td>${student.codechef}</td>
+          <td>${student.highest}</td>
+        `;
+        // When a row is clicked, show a chart with the student's rating history.
+        tr.addEventListener("click", () => showStudentChart(student));
+        tbody.appendChild(tr);
+      });
+    }
+    
+    /***********************************************************************
+     * Render Daily Problems
+     ***********************************************************************/
+    function renderDailyProblems() {
+      const ul = document.getElementById("problemsList");
+      ul.innerHTML = "";
+      dailyProblems.forEach(problem => {
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${problem.platform}:</strong> ${problem.title} (ID: ${problem.problem_id})`;
+        li.style.marginBottom = "10px";
+        ul.appendChild(li);
+      });
+    }
+    
+    /***********************************************************************
+     * Show Student Progress
+     ***********************************************************************/
+    function showProgress() {
+      const studentId = document.getElementById("progressId").value.trim();
+      const resultDiv = document.getElementById("progressResult");
+      if (progressData[studentId]) {
+        const data = progressData[studentId];
+        let html = `<h3>Problems Solved:</h3><ul>`;
+        for (const platform in data.problems_solved) {
+          html += `<li>${platform}: ${data.problems_solved[platform]}</li>`;
+        }
+        html += `</ul>`;
+        html += `<h3>Ratings Over Time:</h3>`;
+        for (const platform in data.ratings_over_time) {
+          html += `<p><strong>${platform}:</strong> ${data.ratings_over_time[platform].join(', ')}</p>`;
+        }
+        resultDiv.innerHTML = html;
+      } else {
+        resultDiv.innerHTML = `<p style="color: #f00;">No progress data found for "${studentId}"</p>`;
+      }
+    }
+    
+    /***********************************************************************
+     * Compare Students
+     ***********************************************************************/
+    function compareStudents() {
+      const idsInput = document.getElementById("compareIds").value.trim();
+      const resultDiv = document.getElementById("compareResult");
+      if (!idsInput) {
+        resultDiv.innerHTML = `<p style="color: #f00;">Please enter at least one student ID.</p>`;
+        return;
+      }
+      const idList = idsInput.split(",").map(id => id.trim());
+      let html = `<table>
+                    <thead>
+                      <tr>
+                        <th>Student ID</th>
+                        <th>Codeforces Rating</th>
+                        <th>LeetCode Rating</th>
+                        <th>CodeChef Rating</th>
+                        <th>Highest Rating</th>
+                      </tr>
+                    </thead>
+                    <tbody>`;
+      let found = false;
+      idList.forEach(id => {
+        const student = students.find(s => s.id === id);
+        if (student) {
+          found = true;
+          html += `<tr>
+                      <td>${student.id}</td>
+                      <td>${student.codeforces}</td>
+                      <td>${student.leetcode}</td>
+                      <td>${student.codechef}</td>
+                      <td>${student.highest}</td>
+                    </tr>`;
+        }
+      });
+      html += `</tbody></table>`;
+      if (!found) {
+        html = `<p style="color: #f00;">No matching student data found.</p>`;
+      }
+      resultDiv.innerHTML = html;
+    }
+    
+    /***********************************************************************
+     * Show Chart Modal for a Student (using Chart.js)
+     ***********************************************************************/
+    let chartInstance = null;
+    function showStudentChart(student) {
+      document.getElementById("modalTitle").innerText = `Rating Trends for ${student.id}`;
+      const labels = ["T1", "T2", "T3", "T4", "T5"];
+      const data = {
+        labels: labels,
+        datasets: [{
+          label: 'Codeforces Rating',
+          data: student.history.Codeforces,
+          backgroundColor: 'rgba(243,156,18,0.7)',
+          borderColor: 'rgba(243,156,18,1)',
+          borderWidth: 2,
+          borderRadius: 4
+        }]
+      };
+      if (chartInstance) { chartInstance.destroy(); }
+      const ctx = document.getElementById('ratingChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+          responsive: true,
+          animation: { duration: 1000, easing: 'easeOutBounce' },
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+      document.getElementById("chartModal").style.display = "block";
+    }
+    
+    /***********************************************************************
+     * Close the Chart Modal
+     ***********************************************************************/
+    function closeModal() {
+      document.getElementById("chartModal").style.display = "none";
+    }
+    
+    /***********************************************************************
+     * Navigation: Show a Section
+     ***********************************************************************/
+    function showSection(sectionId) {
+      document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
+      document.getElementById(sectionId).classList.add("active");
+    }
+    
+    /***********************************************************************
+     * Matter.js Animation Setup (Physics Background with Triangles)
+     ***********************************************************************/
+    const Engine = Matter.Engine,
+          Render = Matter.Render,
+          World = Matter.World,
+          Bodies = Matter.Bodies,
+          Runner = Matter.Runner;
+    
+    const engine = Engine.create();
+    const world = engine.world;
+    const render = Render.create({
+      canvas: document.getElementById('matterCanvas'),
+      engine: engine,
+      options: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        wireframes: false,
+        background: 'transparent'
+      }
+    });
+    
+    // Create boundaries
+    const boundaries = [
+      Bodies.rectangle(window.innerWidth/2, -25, window.innerWidth, 50, { isStatic: true }),
+      Bodies.rectangle(window.innerWidth/2, window.innerHeight+25, window.innerWidth, 50, { isStatic: true }),
+      Bodies.rectangle(-25, window.innerHeight/2, 50, window.innerHeight, { isStatic: true }),
+      Bodies.rectangle(window.innerWidth+25, window.innerHeight/2, 50, window.innerHeight, { isStatic: true })
+    ];
+    World.add(world, boundaries);
+    
+    // Create moving triangular particles
+    let particles = [];
+    for (let i = 0; i < 50; i++) {
+      let particle = Bodies.polygon(Math.random() * window.innerWidth, Math.random() * window.innerHeight, 3, Math.random() * 10 + 5, {
+        restitution: 0.8,
+        render: { fillStyle: '#' + Math.floor(Math.random() * 16777215).toString(16) }
+      });
+      particles.push(particle);
+    }
+    World.add(world, particles);
+    
+    Engine.run(engine);
+    Render.run(render);
+    const runner = Runner.create();
+    Runner.run(runner, engine);
+    
+    window.addEventListener('resize', () => {
+      Render.lookAt(render, {
+        min: { x: 0, y: 0 },
+        max: { x: window.innerWidth, y: window.innerHeight }
+      });
+    });
+    
+    /***********************************************************************
+     * INITIAL RENDER AFTER SPLASH SCREEN
+     ***********************************************************************/
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById("splashScreen").classList.add("hidden");
+        document.getElementById("mainNav").style.display = "block";
+      }, 4000);
+    });
+    
+    renderLeaderboard();
+    renderDailyProblems();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Coders Club Leaderboard</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #111; color: white; overflow-x: hidden; }
+        #particles-js { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .intro-screen { position: fixed; width: 100vw; height: 100vh; background: black; display: flex; align-items: center; justify-content: center; animation: fadeOut 3s forwards 2s; }
+        .logo { font-size: 3rem; font-weight: bold; color: #f39c12; opacity: 0; animation: fadeIn 2s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+        .container { width: 90%; margin: auto; padding-top: 60px; }
+        h1 { text-align: center; color: #f39c12; }
+        .leaderboard { width: 100%; margin-top: 20px; background: #222; padding: 10px; border-radius: 10px; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 10px; text-align: left; }
+        .table th { background: #f39c12; color: black; }
+        .table tr:nth-child(even) { background: #333; }
+        .table tr:hover { background: #444; cursor: pointer; }
+        .chart-container { display: none; text-align: center; margin-top: 20px; }
+        .blog-section { margin-top: 40px; padding: 20px; background: #222; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="intro-screen"><div class="logo">Competitive Programming Club</div></div>
+    <div id="particles-js"></div>
+    <div class="container">
+        
+        <div class="chart-container" id="chartContainer">
+            <canvas id="studentChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+    <script>
+        particlesJS("particles-js", {
+            "particles": { "number": { "value": 50 }, "shape": { "type": "triangle" }, "move": { "speed": 3 } }
+        });
+        function showChart(studentId) {
+            document.getElementById("chartContainer").style.display = "block";
+            const ctx = document.getElementById("studentChart").getContext("2d");
+            new Chart(ctx, { type: 'bar', data: { labels: ["Assignment 1", "Assignment 2", "Project"], datasets: [{ label: "Scores", data: studentId === 1 ? [98, 96, 94] : studentId === 2 ? [95, 90, 88] : [92, 89, 85], backgroundColor: "#f39c12" }] } });
+        }
+    </script>
+</html>
