@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FutureCoders Club</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Futuristic Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Chart.js for charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Matter.js for physics-based background particles -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <style>
+    /* ==================== ROOT VARIABLES ==================== */
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a, #1e293b);
+      --section-bg: rgba(255, 255, 255, 0.05);
+      --neon-cyan: #0ff;
+      --neon-magenta: #ff00ff;
+      --neon-green: #39ff14;
+      --text-color: #e0e0e0;
+    }
+    
+    /* ==================== RESET & BASE ==================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-color);
+      overflow-x: hidden;
+      position: relative;
+    }
+    
+    /* ==================== MATTER.JS BACKGROUND CANVAS ==================== */
+    #matterCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      /* Transparent so our neon particles glow on the gradient */
+      background: transparent;
+    }
+    
+    /* ==================== SPLASH SCREEN WITH GLITCH EFFECT ==================== */
+    #splashScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, #0a0a0a, #1a1a1a);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    /* Glitch-style header */
+    .glitch {
+      position: relative;
+      font-size: 4rem;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      letter-spacing: 5px;
+    }
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0.8;
+    }
+    .glitch::before {
+      color: var(--neon-magenta);
+      animation: glitch-anim 2s infinite linear alternate-reverse;
+    }
+    .glitch::after {
+      color: var(--neon-green);
+      animation: glitch-anim2 3s infinite linear alternate-reverse;
+    }
+    @keyframes glitch-anim {
+      0%   { clip: rect(10px, 9999px, 20px, 0); transform: translate(2px, -2px); }
+      20%  { clip: rect(80px, 9999px, 90px, 0); transform: translate(-2px, 2px); }
+      40%  { clip: rect(40px, 9999px, 50px, 0); transform: translate(-2px, -2px); }
+      60%  { clip: rect(20px, 9999px, 30px, 0); transform: translate(2px, 2px); }
+      80%  { clip: rect(60px, 9999px, 70px, 0); transform: translate(-2px, 2px); }
+      100% { clip: rect(10px, 9999px, 20px, 0); transform: translate(2px, -2px); }
+    }
+    @keyframes glitch-anim2 {
+      0%   { clip: rect(50px, 9999px, 60px, 0); transform: translate(-2px, 2px); }
+      20%  { clip: rect(30px, 9999px, 40px, 0); transform: translate(2px, -2px); }
+      40%  { clip: rect(70px, 9999px, 80px, 0); transform: translate(2px, 2px); }
+      60%  { clip: rect(20px, 9999px, 30px, 0); transform: translate(-2px, -2px); }
+      80%  { clip: rect(40px, 9999px, 50px, 0); transform: translate(2px, -2px); }
+      100% { clip: rect(50px, 9999px, 60px, 0); transform: translate(-2px, 2px); }
+    }
+    #splashScreen p {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      color: var(--neon-cyan);
+      letter-spacing: 2px;
+    }
+    
+    /* ==================== NAVIGATION BAR ==================== */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      padding: 15px 30px;
+      z-index: 900;
+      border-bottom: 2px solid var(--neon-cyan);
+      display: none; /* Will be revealed after splash */
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+    }
+    nav ul li a {
+      color: var(--text-color);
+      text-decoration: none;
+      font-size: 1.2rem;
+      position: relative;
+      transition: color 0.3s;
+    }
+    nav ul li a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -5px;
+      width: 0%;
+      height: 2px;
+      background: var(--neon-cyan);
+      transition: width 0.3s;
+    }
+    nav ul li a:hover::after {
+      width: 100%;
+    }
+    
+    /* ==================== SECTIONS (GLASSMORPHISM) ==================== */
+    .section {
+      margin: 100px auto 40px auto;
+      padding: 30px;
+      max-width: 1200px;
+      background: var(--section-bg);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 15px;
+      box-shadow: 0 0 20px var(--neon-cyan);
+      backdrop-filter: blur(8px);
+      animation: fadeIn 1s ease-out;
+    }
+    .section.active { display: block; }
+    .section h2 {
+      text-align: center;
+      font-size: 2.8rem;
+      margin-bottom: 20px;
+      color: var(--neon-cyan);
+    }
+    /* Fade In Animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* ==================== TABLE STYLES ==================== */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    th {
+      background: var(--neon-cyan);
+      color: black;
+      text-transform: uppercase;
+    }
+    tr:hover {
+      background: rgba(0,255,255,0.2);
+      cursor: pointer;
+    }
+    
+    /* ==================== INPUTS & BUTTONS ==================== */
+    input[type="text"] {
+      padding: 10px;
+      width: 250px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text-color);
+      transition: border 0.3s;
+      margin-bottom: 10px;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--neon-cyan);
+    }
+    button {
+      padding: 10px 16px;
+      background: var(--neon-cyan);
+      color: black;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s, transform 0.2s;
+      margin: 5px;
+    }
+    button:hover {
+      background: var(--neon-green);
+      transform: scale(1.05);
+    }
+    
+    /* ==================== MODAL ==================== */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background: rgba(0,0,0,0.85);
+      animation: fadeIn 0.5s ease-out;
+    }
+    .modal-content {
+      background: var(--section-bg);
+      border: 1px solid var(--neon-cyan);
+      backdrop-filter: blur(10px);
+      color: var(--text-color);
+      margin: 8% auto;
+      padding: 20px 30px;
+      max-width: 700px;
+      border-radius: 10px;
+      position: relative;
+      box-shadow: 0 0 20px var(--neon-cyan);
+    }
+    .close-btn {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background: var(--neon-cyan);
+      border: none;
+      color: black;
+      font-size: 1.4rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .close-btn:hover {
+      background: var(--neon-green);
+    }
+    
+    /* ==================== GENERAL LINK & LIST ==================== */
+    a {
+      color: var(--neon-cyan);
+      text-decoration: none;
+      font-weight: bold;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    ul {
+      list-style: none;
+      padding-left: 20px;
+    }
+    
+    /* ==================== RESPONSIVE ==================== */
+    @media (max-width: 768px) {
+      nav ul { flex-direction: column; gap: 20px; }
+      .section { margin: 120px 20px 40px; padding: 20px; }
+      input[type="text"] { width: 200px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Matter.js Canvas for Futuristic Particles -->
+  <canvas id="matterCanvas"></canvas>
+  
+  <!-- SPLASH SCREEN -->
+  <div id="splashScreen">
+    <!-- Glitch animated futuristic logo -->
+    <h1 class="glitch" data-text="FutureCoders Club">FutureCoders Club</h1>
+    <p>Welcome to the Era Beyond Tomorrow</p>
+  </div>
+  
+  <!-- NAVIGATION BAR -->
+  <nav id="mainNav">
+    <ul>
+      <li><a href="javascript:void(0)" onclick="showSection('leaderboard')">Leaderboard</a></li>
+      <li><a href="javascript:void(0)" onclick="showSection('daily')">Daily Challenges</a></li>
+      <li><a href="javascript:void(0)" onclick="showSection('progress')">My Progress</a></li>
+      <li><a href="javascript:void(0)" onclick="showSection('compare')">Compare</a></li>
+      <li><a href="javascript:void(0)" onclick="showSection('blog')">Blog</a></li>
+      <li><a href="javascript:void(0)" onclick="showSection('club')">Club Info</a></li>
+    </ul>
+  </nav>
+  
+  <!-- SECTIONS -->
+  <!-- Leaderboard Section -->
+  <div id="leaderboard" class="section active">
+    <h2>Leaderboard</h2>
+    <table id="leaderboardTable">
+      <thead>
+        <tr>
+          <th>Sr. No.</th>
+          <th>Student ID</th>
+          <th>Codeforces</th>
+          <th>LeetCode</th>
+          <th>CodeChef</th>
+          <th>Highest</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Rows injected by JavaScript -->
+      </tbody>
+    </table>
+    <p style="text-align: center;">Click any row to view rating trends.</p>
+  </div>
+  
+  <!-- Daily Challenges Section -->
+  <div id="daily" class="section">
+    <h2>Daily Challenges</h2>
+    <ul id="problemsList">
+      <!-- Daily challenge items injected by JavaScript -->
+    </ul>
+  </div>
+  
+  <!-- My Progress Section -->
+  <div id="progress" class="section">
+    <h2>My Progress</h2>
+    <p style="text-align: center;">Enter your Student ID:</p>
+    <div style="text-align: center; margin-bottom: 20px;">
+      <input type="text" id="progressId" placeholder="e.g., student1">
+      <button onclick="showProgress()">Fetch Progress</button>
+    </div>
+    <div id="progressResult"></div>
+  </div>
+  
+  <!-- Compare Section -->
+  <div id="compare" class="section">
+    <h2>Compare Students</h2>
+    <p style="text-align: center;">Enter Student IDs (comma separated):</p>
+    <div style="text-align: center; margin-bottom: 20px;">
+      <input type="text" id="compareIds" placeholder="e.g., student1, student2">
+      <button onclick="compareStudents()">Compare</button>
+    </div>
+    <div id="compareResult"></div>
+  </div>
+  
+  <!-- Blog Section -->
+  <div id="blog" class="section">
+    <h2>Blog</h2>
+    <p>Welcome to our futuristic blog—updates, insights, and tutorials for the digital minds of tomorrow.</p>
+    <article>
+      <h3>Post Title 1</h3>
+      <p>In a future where algorithms evolve themselves, creativity meets computation...</p>
+      <a href="#">Read more...</a>
+    </article>
+    <article>
+      <h3>Post Title 2</h3>
+      <p>The code of the future is not just syntax—it’s art and science interwoven in neural threads...</p>
+      <a href="#">Read more...</a>
+    </article>
+  </div>
+  
+  <!-- Club Info Section -->
+  <div id="club" class="section">
+    <h2>Club Information & Resources</h2>
+    <h3>About FutureCoders Club:</h3>
+    <p>Join us on a journey beyond the boundaries of time and code. Our mission is to shape the digital future with innovation and passion.</p>
+    <h3>Resources:</h3>
+    <ul>
+      <li>Holo-Presentations: <a href="https://drive.google.com/your-ppt-link" target="_blank">Access Here</a></li>
+      <li>Study Modules: <a href="https://drive.google.com/your-materials-link" target="_blank">Access Here</a></li>
+    </ul>
+    <h3>Mentorship Sessions:</h3>
+    <p>Experience guided sessions with AI and holographic mentors from across galaxies.</p>
+  </div>
+  
+  <!-- CHART MODAL -->
+  <div id="chartModal" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+      <h3 id="modalTitle">Student Rating Trends</h3>
+      <canvas id="ratingChart"></canvas>
+    </div>
+  </div>
+  
+  <script>
+    /*********************** DUMMY DATA ***********************/
+    const students = [
+      { id: "student1", codeforces: 1500, leetcode: 1400, codechef: 1450, history: { Codeforces: [1400, 1420, 1450, 1470, 1500] } },
+      { id: "student2", codeforces: 1600, leetcode: 1500, codechef: 1550, history: { Codeforces: [1550, 1560, 1580, 1590, 1600] } },
+      { id: "student3", codeforces: 1550, leetcode: 1450, codechef: 1500, history: { Codeforces: [1500, 1510, 1530, 1540, 1550] } },
+      { id: "student4", codeforces: 1700, leetcode: 1600, codechef: 1650, history: { Codeforces: [1650, 1660, 1680, 1690, 1700] } },
+      { id: "student5", codeforces: 1480, leetcode: 1380, codechef: 1420, history: { Codeforces: [1420, 1430, 1450, 1460, 1480] } },
+      // ... add more as needed
+    ];
+    
+    // Calculate highest rating for each student
+    students.forEach(s => {
+      s.highest = Math.max(s.codeforces, s.leetcode, s.codechef);
+    });
+    
+    const dailyProblems = [
+      { platform: "Codeforces", problem_id: "123A", title: "A+B Problem" },
+      { platform: "LeetCode", problem_id: "Two Sum", title: "Two Sum" },
+      { platform: "CodeChef", problem_id: "START01", title: "Starter Problem" }
+    ];
+    
+    const progressData = {
+      "student1": { problems_solved: { Codeforces: 120, LeetCode: 100, CodeChef: 80 }, ratings: [1400,1420,1450,1470,1500] },
+      "student2": { problems_solved: { Codeforces: 150, LeetCode: 140, CodeChef: 130 }, ratings: [1550,1560,1580,1590,1600] },
+      "student3": { problems_solved: { Codeforces: 130, LeetCode: 120, CodeChef: 110 }, ratings: [1500,1510,1530,1540,1550] },
+      "student4": { problems_solved: { Codeforces: 180, LeetCode: 170, CodeChef: 160 }, ratings: [1650,1660,1680,1690,1700] }
+    };
+    
+    /*********************** RENDER FUNCTIONS ***********************/
+    function renderLeaderboard() {
+      const tbody = document.querySelector("#leaderboardTable tbody");
+      tbody.innerHTML = "";
+      const sorted = students.sort((a, b) => b.highest - a.highest);
+      sorted.forEach((student, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${student.id}</td>
+          <td>${student.codeforces}</td>
+          <td>${student.leetcode}</td>
+          <td>${student.codechef}</td>
+          <td>${student.highest}</td>
+        `;
+        tr.addEventListener("click", () => showStudentChart(student));
+        tbody.appendChild(tr);
+      });
+    }
+    
+    function renderDailyProblems() {
+      const ul = document.getElementById("problemsList");
+      ul.innerHTML = "";
+      dailyProblems.forEach(problem => {
+        const li = document.createElement("li");
+        li.style.marginBottom = "10px";
+        li.innerHTML = `<strong>${problem.platform}:</strong> ${problem.title} (ID: ${problem.problem_id})`;
+        ul.appendChild(li);
+      });
+    }
+    
+    function showProgress() {
+      const id = document.getElementById("progressId").value.trim();
+      const result = document.getElementById("progressResult");
+      if (progressData[id]) {
+        const data = progressData[id];
+        let html = `<h3>Problems Solved:</h3><ul>`;
+        for (let platform in data.problems_solved) {
+          html += `<li>${platform}: ${data.problems_solved[platform]}</li>`;
+        }
+        html += `</ul><h3>Rating History:</h3><p>${data.ratings.join(', ')}</p>`;
+        result.innerHTML = html;
+      } else {
+        result.innerHTML = `<p style="color: #ff3366;">No data found for "${id}"</p>`;
+      }
+    }
+    
+    function compareStudents() {
+      const ids = document.getElementById("compareIds").value.split(",").map(s => s.trim());
+      let html = `<table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Codeforces</th>
+                        <th>LeetCode</th>
+                        <th>CodeChef</th>
+                        <th>Highest</th>
+                      </tr>
+                    </thead>
+                    <tbody>`;
+      let found = false;
+      ids.forEach(id => {
+        const student = students.find(s => s.id === id);
+        if (student) {
+          found = true;
+          html += `<tr>
+                     <td>${student.id}</td>
+                     <td>${student.codeforces}</td>
+                     <td>${student.leetcode}</td>
+                     <td>${student.codechef}</td>
+                     <td>${student.highest}</td>
+                   </tr>`;
+        }
+      });
+      html += `</tbody></table>`;
+      if (!found) {
+        html = `<p style="color: #ff3366;">No matching student data found.</p>`;
+      }
+      document.getElementById("compareResult").innerHTML = html;
+    }
+    
+    let chartInstance = null;
+    function showStudentChart(student) {
+      document.getElementById("modalTitle").innerText = `Rating Trends for ${student.id}`;
+      const labels = ["T1", "T2", "T3", "T4", "T5"];
+      const data = {
+        labels: labels,
+        datasets: [{
+          label: 'Codeforces Rating',
+          data: student.history.Codeforces,
+          backgroundColor: 'rgba(0,255,255,0.7)',
+          borderColor: 'rgba(0,255,255,1)',
+          borderWidth: 2,
+          borderRadius: 4
+        }]
+      };
+      if (chartInstance) chartInstance.destroy();
+      const ctx = document.getElementById("ratingChart").getContext("2d");
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: { responsive: true, scales: { y: { beginAtZero: false } } }
+      });
+      document.getElementById("chartModal").style.display = "block";
+    }
+    
+    function closeModal() {
+      document.getElementById("chartModal").style.display = "none";
+    }
+    
+    function showSection(sectionId) {
+      document.querySelectorAll(".section").forEach(sec => sec.style.display = "none");
+      document.getElementById(sectionId).style.display = "block";
+    }
+    
+    /*********************** MATTER.JS BACKGROUND ***********************/
+    const { Engine, Render, World, Bodies, Runner } = Matter;
+    const engine = Engine.create();
+    const world = engine.world;
+    const render = Render.create({
+      canvas: document.getElementById("matterCanvas"),
+      engine: engine,
+      options: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        wireframes: false,
+        background: "transparent"
+      }
+    });
+    
+    // Boundaries
+    const boundaries = [
+      Bodies.rectangle(window.innerWidth/2, -25, window.innerWidth, 50, { isStatic: true }),
+      Bodies.rectangle(window.innerWidth/2, window.innerHeight+25, window.innerWidth, 50, { isStatic: true }),
+      Bodies.rectangle(-25, window.innerHeight/2, 50, window.innerHeight, { isStatic: true }),
+      Bodies.rectangle(window.innerWidth+25, window.innerHeight/2, 50, window.innerHeight, { isStatic: true })
+    ];
+    World.add(world, boundaries);
+    
+    // Futuristic neon triangular particles
+    const particles = [];
+    for (let i = 0; i < 50; i++) {
+      const particle = Bodies.polygon(
+        Math.random() * window.innerWidth,
+        Math.random() * window.innerHeight,
+        3,
+        Math.random() * 10 + 5, {
+          restitution: 0.8,
+          render: { fillStyle: 'rgba(0,255,255,0.7)' }
+        }
+      );
+      particles.push(particle);
+    }
+    World.add(world, particles);
+    
+    Engine.run(engine);
+    Render.run(render);
+    Runner.run(Runner.create(), engine);
+    
+    window.addEventListener("resize", () => {
+      Render.lookAt(render, {
+        min: { x: 0, y: 0 },
+        max: { x: window.innerWidth, y: window.innerHeight }
+      });
+    });
+    
+    /*********************** INITIALIZATION ***********************/
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        document.getElementById("splashScreen").style.display = "none";
+        document.getElementById("mainNav").style.display = "block";
+      }, 4000);
+      renderLeaderboard();
+      renderDailyProblems();
+    });
+  </script>
+</body>
+</html>
